@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bek Academy LMS & Sovg'alar Do'koni</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    body {
+      background-color: #080c14;
+      color: #f3f4f6;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .active-tab {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between select-none">
+
+  <!-- TOP HEADER -->
+  <header class="glass-card sticky top-0 z-40 border-b border-slate-800 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-xl flex items-center justify-center font-black text-slate-950 text-xl shadow-lg shadow-amber-500/20">
+        🎓
+      </div>
+      <div>
+        <h1 class="font-bold text-white text-base leading-tight tracking-wide">Bek Academy LMS</h1>
+        <p class="text-xs text-amber-400 font-medium" id="header-user-role">Tizimga kirilmagan</p>
+      </div>
+    </div>
+
+    <!-- Right User Controls -->
+    <div id="header-right-controls" class="hidden flex items-center space-x-3">
+      <div id="sync-status" class="text-[10px] text-emerald-400 font-semibold px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hidden md:flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Firebase Sinxron
+      </div>
+      <div id="student-coin-badge" class="bg-amber-500/10 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-amber-400 font-bold text-sm flex items-center gap-2 shadow-inner">
+        🪙 <span id="user-coins-display" class="text-white">0</span> Ball
+      </div>
+      <button onclick="window.logout()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer">
+        <i class="fas fa-sign-out-alt"></i> Chiqish
+      </button>
+    </div>
+  </header>
+
+  <!-- LOGIN MODAL -->
+  <div id="login-modal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-md p-8 rounded-3xl border border-slate-800 shadow-2xl">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-2xl mx-auto flex items-center justify-center text-3xl font-black text-slate-950 shadow-xl shadow-amber-500/20 mb-3">
+          🎓
+        </div>
+        <h2 class="text-2xl font-black text-white tracking-wide">Bek Academy LMS</h2>
+        <p class="text-slate-400 text-xs mt-1">O'quvchi yoki Ustoz hisobingizga kiring</p>
+      </div>
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Login</label>
+          <input type="text" id="login-input" required placeholder="bek_01 yoki admin" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Parol</label>
+          <input type="password" id="password-input" required placeholder="Parolingizni kiriting" class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+        </div>
+        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-lg shadow-blue-600/30 mt-2 cursor-pointer">
+          Tizimga kirish →
+        </button>
+      </form>
+      <p id="login-error" class="text-red-400 text-xs text-center mt-3 hidden font-semibold">Login yoki parol xato!</p>
+    </div>
+  </div>
+
+  <!-- MAIN APP WRAPPER -->
+  <div id="app-wrapper" class="hidden flex-1 flex flex-col">
+    
+    <!-- STUDENT NAVIGATION -->
+    <nav id="student-nav" class="hidden glass-card border-b border-slate-800 px-6 py-2.5 flex items-center space-x-2 overflow-x-auto">
+      <button onclick="window.switchStudentTab('shop')" id="st-tab-shop" class="active-tab bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
+        <i class="fas fa-store text-emerald-400"></i> Sovg'alar Do'koni
+      </button>
+      <button onclick="window.switchStudentTab('lessons')" id="st-tab-lessons" class="bg-slate-800 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
+        <i class="fas fa-book-open text-blue-400"></i> Darslar
+      </button>
+      <button onclick="window.switchStudentTab('rating')" id="st-tab-rating" class="bg-slate-800 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
+        <i class="fas fa-trophy text-amber-400"></i> Reyting
+      </button>
+    </nav>
+
+    <!-- ADMIN NAVIGATION -->
+    <nav id="admin-nav" class="hidden glass-card border-b border-slate-800 px-6 py-2.5 flex items-center space-x-2 overflow-x-auto">
+      <button onclick="window.switchAdminTab('att')" id="ad-tab-att" class="active-tab bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
+        <i class="fas fa-calendar-check text-emerald-400"></i> Davomat & Ballar
+      </button>
+      <button onclick="window.switchAdminTab('orders')" id="ad-tab-orders" class="bg-slate-800 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
+        <i class="fas fa-shopping-bag text-purple-400"></i> Sotib Olingan Sovg'alar
+      </button>
+      <button onclick="window.switchAdminTab('plan')" id="ad-tab-plan" class="bg-slate-800 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
+        <i class="fas fa-list-check text-blue-400"></i> O'quv Rejasi
+      </button>
+      <button onclick="window.switchAdminTab('subs')" id="ad-tab-subs" class="bg-slate-800 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer">
+        <i class="fas fa-inbox text-amber-400"></i> Kelgan Vazifalar
+      </button>
+    </nav>
+
+    <!-- CONTENT CONTAINERS -->
+    <main class="flex-1 p-6 max-w-6xl w-full mx-auto space-y-6">
+
+      <!-- ================= STUDENT VIEWS ================= -->
+      <div id="student-view-container" class="hidden space-y-6">
+        
+        <!-- Student Shop Tab -->
+        <section id="st-sec-shop" class="space-y-4">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fas fa-gift text-emerald-500"></i> Sovg'alar Do'koni
+            </h2>
+            <div class="bg-slate-900 border border-slate-800 px-4 py-1.5 rounded-xl text-xs text-slate-400 flex items-center gap-2">
+              <span>Hozirgi ballingiz:</span>
+              <strong class="text-amber-400 text-sm font-black">🪙 <span id="shop-coins-display">0</span> Ball</strong>
+            </div>
+          </div>
+          <div id="shop-items-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+        </section>
+
+        <!-- Student Lessons Tab -->
+        <section id="st-sec-lessons" class="hidden space-y-4">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fas fa-graduation-cap text-blue-500"></i> O'tilgan Darslar va Vazifalar
+          </h2>
+          <div id="student-lessons-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- Student Rating Tab -->
+        <section id="st-sec-rating" class="hidden space-y-4">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fas fa-chart-line text-amber-500"></i> Guruh Reytingi
+          </h2>
+          <div class="glass-card rounded-2xl overflow-hidden border border-slate-800">
+            <div id="leaderboard-rows" class="divide-y divide-slate-800/80"></div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ================= ADMIN VIEWS ================= -->
+      <div id="admin-view-container" class="hidden space-y-6">
+        
+        <section id="ad-sec-att" class="space-y-4">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fas fa-calendar-check text-emerald-400"></i> Bugungi Davomat va Intizom
+          </h2>
+          <div id="admin-att-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- ADMIN ORDERS TAB (YANGI BO'LIM) -->
+        <section id="ad-sec-orders" class="hidden space-y-4">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fas fa-shopping-bag text-purple-400"></i> O'quvchilar Sotib Olgan Sovg'alar Tarixi
+          </h2>
+          <div class="glass-card rounded-2xl overflow-hidden border border-slate-800">
+            <div id="admin-orders-list" class="divide-y divide-slate-800/80"></div>
+          </div>
+        </section>
+
+        <section id="ad-sec-plan" class="hidden space-y-4">
+          <h2 class="text-lg font-bold text-white">O'quv Dasturi Rejasi</h2>
+          <div id="admin-plan-list" class="space-y-3"></div>
+        </section>
+
+        <section id="ad-sec-subs" class="hidden space-y-4">
+          <h2 class="text-lg font-bold text-white">O'quvchilar Yuborgan Topshiriqlar</h2>
+          <div id="admin-subs-list" class="space-y-3"></div>
+        </section>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- SUBMIT HOMEWORK MODAL -->
+  <div id="hw-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card w-full max-w-lg p-6 rounded-2xl border border-slate-800 space-y-4">
+      <div class="flex justify-between items-start">
+        <h3 id="hw-modal-title" class="font-bold text-white text-base">Vazifa Topshirish</h3>
+        <button onclick="window.closeHwModal()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fas fa-times"></i></button>
+      </div>
+      <p id="hw-modal-desc" class="text-xs text-slate-400"></p>
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Javobingiz (Link yoki Izoh):</label>
+        <textarea id="hw-input-ans" rows="3" placeholder="Masalan: https://scratch.mit.edu/projects/..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-blue-500"></textarea>
+      </div>
+      <button onclick="window.confirmSubmitHw()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition text-sm cursor-pointer">
+        Vazifani Yuborish
+      </button>
+    </div>
+  </div>
+
+  <!-- FIREBASE & CORE ENGINE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyRa7Ukjke7Ps0IOIApFc6M0uMFgpU7OSE",
+      authDomain: "bek-academy-5c55f.firebaseapp.com",
+      projectId: "bek-academy-5c55f",
+      storageBucket: "bek-academy-5c55f.firebasestorage.app",
+      messagingSenderId: "247446808726",
+      appId: "1:247446808726:web:6cec3eb49aaf06ff74fab7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const docRef = doc(db, "lms_data", "main_store");
+
+    const defaultCurriculum = [
+      { id: 1, title: "1-dars: Kompyuterning ichki va tashqi tuzilishi", desc: "Kompyuter qismlari, klaviatura va sichqoncha bilan ishlash.", published: true },
+      { id: 2, title: "2-dars: Google Docs - Matn tayyorlash", desc: "Hujjat yaratish, shrift va ranglar bilan ishlash.", published: true },
+      { id: 3, title: "3-dars: Google Sheets - Jadvallar bilan ishlash", desc: "Jadvallar tuzish va katakchalarni to'ldirish.", published: false },
+      { id: 4, title: "4-dars: Google Sheets - Formulalar va Hisob-kitob", desc: "Sodda hisob-kitoblar va ustunlarni bezatish.", published: false },
+      { id: 5, title: "5-dars: Tinkercad - 3D Modellashtirishga kirish", desc: "3D shakllar yaratish va ularni birlashtirish.", published: false }
+    ];
+
+    const shopProducts = [
+      { id: 101, name: "LMS Faxriy Yorliq", price: 100, category: "Sertifikat", image: "https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?auto=format&fit=crop&w=400&q=80" },
+      { id: 102, name: "Stikerlar To'plami", price: 50, category: "Aksessuar", image: "https://toptop.uz/storage/resize_cache/450_450_no_crop/product/photos/Mzuq8zw7Bkm2uhH_hm5107956679970.jpg" },
+      { id: 103, name: "1-kunlik Uyga vazifasiz kun", price: 200, category: "Imtiyoz", image: "https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=400&q=80" },
+      { id: 1, name: "O'chadigan sihirli ruchka", price: 80, category: "Ruchka", image: "https://images.unsplash.com/photo-1585336261026-61e778129d2f?auto=format&fit=crop&w=400&q=80" },
+      { id: 2, name: "Qizlar uchun soch obrochi", price: 120, category: "Aksessuar", image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=400&q=80" },
+      { id: 3, name: "FC Barcelona to'pi", price: 450, category: "Sport", image: "https://images.unsplash.com/photo-1614632537190-23e4146777db?auto=format&fit=crop&w=400&q=80" },
+      { id: 4, name: "Real Madrid to'pi", price: 450, category: "Sport", image: "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=400&q=80" },
+      { id: 5, name: "Bolalar Smart Watch soati", price: 850, category: "Gadjet", image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80" },
+      { id: 6, name: "Bolalar uchun O'quv Plansheti", price: 2500, category: "Texnika", image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&q=80" },
+      { id: 7, name: "iPhone 17 Pro Max", price: 5000, category: "Super-sovrin", image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80" }
+      { id: 8, name: "Futbol Forma", price: 3000, category: "Super-sovrin", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcScUaNUazWfkzxwAzJIbFuxaZPLdUCK18jtl4mqq9kykZUSO5bytuWrUuM&s=10" }
+    ];
+
+    const defaultStudents = Array.from({length: 15}, (_, i) => ({
+      id: `bek_${String(i+1).padStart(2, '0')}`,
+      pass: `bek2026_${i+1}`,
+      name: `O'quvchi #${i+1}`,
+      coins: 250
+    }));
+
+    window.appData = {
+      students: defaultStudents,
+      curriculum: defaultCurriculum,
+      submissions: [],
+      orders: []
+    };
+
+    window.currentUser = null;
+    window.selectedLessonForHw = null;
+    window.activeStudentTab = 'shop';
+    window.activeAdminTab = 'att';
+
+    // REAL-TIME FIRESTORE LISTENER
+    onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        window.appData = snapshot.data();
+        if (!window.appData.orders) window.appData.orders = [];
+      } else {
+        setDoc(docRef, window.appData);
+      }
+      refreshActiveUI();
+    });
+
+    window.saveCloudData = async function() {
+      await setDoc(docRef, window.appData);
+    };
+
+    function refreshActiveUI() {
+      if (!window.currentUser) return;
+      
+      if (window.currentUser.role === 'student') {
+        updateStudentCoins();
+        if (window.activeStudentTab === 'lessons') renderStudentLessons();
+        if (window.activeStudentTab === 'rating') renderStudentRating();
+        if (window.activeStudentTab === 'shop') renderStudentShop();
+      } else {
+        if (window.activeAdminTab === 'plan') renderAdminPlan();
+        if (window.activeAdminTab === 'subs') renderAdminSubs();
+        if (window.activeAdminTab === 'att') renderAdminAtt();
+        if (window.activeAdminTab === 'orders') renderAdminOrders();
+      }
+    }
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const u = document.getElementById('login-input').value.trim();
+      const p = document.getElementById('password-input').value.trim();
+
+      if (u === 'admin' && p === 'admin123') {
+        window.currentUser = { role: 'admin', name: 'Ustoz / Admin Panel' };
+        setupDashboard();
+      } else {
+        const student = window.appData.students.find(s => s.id === u && s.pass === p);
+        if (student) {
+          window.currentUser = { role: 'student', ...student };
+          setupDashboard();
+        } else {
+          document.getElementById('login-error').classList.remove('hidden');
+        }
+      }
+    });
+
+    function setupDashboard() {
+      document.getElementById('login-modal').classList.add('hidden');
+      document.getElementById('login-error').classList.add('hidden');
+      document.getElementById('app-wrapper').classList.remove('hidden');
+      document.getElementById('header-right-controls').classList.remove('hidden');
+
+      if (window.currentUser.role === 'admin') {
+        document.getElementById('header-user-role').innerText = 'Ustoz / Admin Panel';
+        document.getElementById('student-coin-badge').classList.add('hidden');
+
+        document.getElementById('student-nav').classList.add('hidden');
+        document.getElementById('student-view-container').classList.add('hidden');
+
+        document.getElementById('admin-nav').classList.remove('hidden');
+        document.getElementById('admin-view-container').classList.remove('hidden');
+        
+        window.switchAdminTab('att');
+      } else {
+        document.getElementById('header-user-role').innerText = window.currentUser.name;
+        document.getElementById('student-coin-badge').classList.remove('hidden');
+        updateStudentCoins();
+
+        document.getElementById('admin-nav').classList.add('hidden');
+        document.getElementById('admin-view-container').classList.add('hidden');
+
+        document.getElementById('student-nav').classList.remove('hidden');
+        document.getElementById('student-view-container').classList.remove('hidden');
+
+        window.switchStudentTab('shop');
+      }
+    }
+
+    function updateStudentCoins() {
+      if (window.currentUser && window.currentUser.role === 'student') {
+        const st = window.appData.students.find(s => s.id === window.currentUser.id);
+        if (st) {
+          window.currentUser.coins = st.coins;
+          document.getElementById('user-coins-display').innerText = st.coins;
+          const shopDisplay = document.getElementById('shop-coins-display');
+          if (shopDisplay) shopDisplay.innerText = st.coins;
+        }
+      }
+    }
+
+    window.logout = function() {
+      window.currentUser = null;
+      document.getElementById('app-wrapper').classList.add('hidden');
+      document.getElementById('header-right-controls').classList.add('hidden');
+      document.getElementById('login-modal').classList.remove('hidden');
+      document.getElementById('login-input').value = '';
+      document.getElementById('password-input').value = '';
+    };
+
+    window.switchStudentTab = function(tab) {
+      window.activeStudentTab = tab;
+      ['lessons', 'rating', 'shop'].forEach(t => {
+        document.getElementById(`st-sec-${t}`).classList.add('hidden');
+        document.getElementById(`st-tab-${t}`).className = "bg-slate-800 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer";
+      });
+
+      document.getElementById(`st-sec-${tab}`).classList.remove('hidden');
+      document.getElementById(`st-tab-${tab}`).className = "active-tab px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer";
+
+      if (tab === 'lessons') renderStudentLessons();
+      if (tab === 'rating') renderStudentRating();
+      if (tab === 'shop') renderStudentShop();
+    };
+
+    function renderStudentLessons() {
+      const container = document.getElementById('student-lessons-list');
+      const published = window.appData.curriculum.filter(c => c.published);
+
+      if (published.length === 0) {
+        container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-500 text-sm">Hozircha darslar chiqarilmagan.</div>`;
+        return;
+      }
+
+      container.innerHTML = published.map(item => {
+        const sub = (window.appData.submissions || []).find(s => s.taskId === item.id && s.studentId === window.currentUser.id);
+        let badge = '<span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-semibold">Topshirilmagan</span>';
+        if (sub) {
+          if (sub.status === 'Qabul qilindi') {
+            badge = `<span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-semibold">Qabul qilindi (+10 ball)</span>`;
+          } else {
+            badge = '<span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded font-semibold">Tekshirilmoqda</span>';
+          }
+        }
+
+        return `
+          <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
+            <div class="flex justify-between items-start">
+              <h3 class="font-bold text-white text-sm">${item.title}</h3>
+              ${badge}
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">${item.desc}</p>
+            <div class="pt-2 flex justify-between items-center border-t border-slate-800">
+              <span class="text-xs text-amber-400 font-semibold">🪙 +10 ball beriladi</span>
+              <button onclick="window.openHwModal(${item.id})" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer">
+                ${sub ? 'Javobni yangilash' : 'Vazifa topshirish'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.openHwModal = function(id) {
+      const lesson = window.appData.curriculum.find(c => c.id === id);
+      window.selectedLessonForHw = lesson;
+      document.getElementById('hw-modal-title').innerText = lesson.title;
+      document.getElementById('hw-modal-desc').innerText = lesson.desc;
+      document.getElementById('hw-modal').classList.remove('hidden');
+    };
+
+    window.closeHwModal = function() {
+      document.getElementById('hw-modal').classList.add('hidden');
+    };
+
+    window.confirmSubmitHw = async function() {
+      const ans = document.getElementById('hw-input-ans').value.trim();
+      if (!ans) return alert("Iltimos, vazifa javobini kiriting!");
+
+      if (!window.appData.submissions) window.appData.submissions = [];
+      const existingIndex = window.appData.submissions.findIndex(s => s.taskId === window.selectedLessonForHw.id && s.studentId === window.currentUser.id);
+      
+      if (existingIndex >= 0) {
+        window.appData.submissions[existingIndex].ans = ans;
+        window.appData.submissions[existingIndex].status = 'Kutilmoqda';
+      } else {
+        window.appData.submissions.push({
+          taskId: window.selectedLessonForHw.id,
+          taskTitle: window.selectedLessonForHw.title,
+          studentId: window.currentUser.id,
+          ans: ans,
+          status: 'Kutilmoqda'
+        });
+      }
+
+      await window.saveCloudData();
+      window.closeHwModal();
+      document.getElementById('hw-input-ans').value = '';
+      alert("Vazifa yuborildi!");
+      renderStudentLessons();
+    };
+
+    function renderStudentRating() {
+      const container = document.getElementById('leaderboard-rows');
+      const sorted = [...window.appData.students].sort((a,b) => b.coins - a.coins);
+
+      container.innerHTML = sorted.map((s, idx) => `
+        <div class="p-4 flex items-center justify-between text-sm ${s.id === window.currentUser?.id ? 'bg-blue-600/10' : ''}">
+          <div class="flex items-center space-x-3">
+            <span class="font-black text-xs ${idx === 0 ? 'text-amber-400' : idx === 1 ? 'text-slate-300' : idx === 2 ? 'text-amber-600' : 'text-slate-500'} w-5">#${idx+1}</span>
+            <span class="font-bold text-white">${s.name} (${s.id})</span>
+          </div>
+          <span class="font-bold text-amber-400">🪙 ${s.coins} Ball</span>
+        </div>
+      `).join('');
+    }
+
+    function renderStudentShop() {
+      const container = document.getElementById('shop-items-grid');
+      const userCoins = window.currentUser ? window.appData.students.find(s => s.id === window.currentUser.id)?.coins || 0 : 0;
+
+      container.innerHTML = shopProducts.map(p => {
+        const canAfford = userCoins >= p.price;
+        const remaining = p.price - userCoins;
+        
+        return `
+          <div class="glass-card rounded-2xl overflow-hidden border border-slate-800/80 hover:border-slate-700 transition flex flex-col justify-between p-3.5 space-y-3">
+            <div class="relative w-full h-36 bg-slate-900 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+              <img src="${p.image}" alt="${p.name}" class="max-h-full max-w-full object-contain">
+              <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md px-2 py-0.5 rounded-lg text-[10px] font-bold text-slate-300 border border-slate-800">
+                ${p.category}
+              </span>
+            </div>
+            
+            <div class="space-y-1">
+              <h4 class="font-bold text-white text-sm leading-tight">${p.name}</h4>
+              <p class="text-amber-400 font-black text-sm">🪙 ${p.price} Ball</p>
+            </div>
+
+            <div>
+              ${canAfford ? `
+                <button onclick="window.buyProduct(${p.price}, '${p.name.replace(/'/g, "\\'")}')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer">
+                  <i class="fas fa-shopping-cart"></i> Sotib olish
+                </button>
+              ` : `
+                <button disabled class="w-full bg-slate-800 text-slate-400 font-semibold py-2 rounded-xl text-xs cursor-not-allowed">
+                  Ball yetarli emas (yana ${remaining} ball)
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // TO'LIQ ISHLAYDIGAN SOTIB OLISH FUNKSIYASI (XARIDLARNI FIRESTORE GA SAQLAYDI)
+    window.buyProduct = async function(price, name) {
+      if (!window.currentUser) {
+        return alert("Iltimos, avval tizimga kiring!");
+      }
+      
+      const student = window.appData.students.find(s => s.id === window.currentUser.id);
+      if (!student) {
+        return alert("O'quvchi ma'lumotlari topilmadi!");
+      }
+      
+      if (student.coins < price) {
+        const needed = price - student.coins;
+        return alert(`Xarid amalga oshmadi! Ballaringiz yetarli emas. Sizda ${student.coins} ball bor, yana ${needed} ball kerak.`);
+      }
+      
+      if (confirm(`Rostdan ham "${name}" sovg'asini ${price} ballga sotib olmoqchimisiz?`)) {
+        student.coins -= price;
+
+        // Xaridni orders ro'yxatiga qo'shish
+        if (!window.appData.orders) window.appData.orders = [];
+        const now = new Date();
+        const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        window.appData.orders.unshift({
+          id: Date.now(),
+          studentId: student.id,
+          studentName: student.name,
+          productName: name,
+          price: price,
+          date: timeStr
+        });
+
+        await window.saveCloudData();
+        updateStudentCoins();
+        
+        if (window.confetti) {
+          confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        }
+        
+        alert(`Tabriklaymiz! Siz "${name}" sovg'asini muvaffaqiyatli sotib oldingiz. Ustozingiz sovg'angizni darsda topshiradi.`);
+        renderStudentShop();
+      }
+    };
+
+    window.switchAdminTab = function(tab) {
+      window.activeAdminTab = tab;
+      ['plan', 'subs', 'att', 'orders'].forEach(t => {
+        const sec = document.getElementById(`ad-sec-${t}`);
+        const btn = document.getElementById(`ad-tab-${t}`);
+        if (sec) sec.classList.add('hidden');
+        if (btn) btn.className = "bg-slate-800 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer";
+      });
+
+      const activeSec = document.getElementById(`ad-sec-${tab}`);
+      const activeBtn = document.getElementById(`ad-tab-${tab}`);
+      if (activeSec) activeSec.classList.remove('hidden');
+      if (activeBtn) activeBtn.className = "active-tab px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer";
+
+      if (tab === 'plan') renderAdminPlan();
+      if (tab === 'subs') renderAdminSubs();
+      if (tab === 'att') renderAdminAtt();
+      if (tab === 'orders') renderAdminOrders();
+    };
+
+    // ADMIN ORDERS LIST RENDER
+    function renderAdminOrders() {
+      const container = document.getElementById('admin-orders-list');
+      const orders = window.appData.orders || [];
+
+      if (orders.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-slate-500 text-sm font-semibold">Hozircha hech qanday sovg'a sotib olinmagan.</div>`;
+        return;
+      }
+
+      container.innerHTML = orders.map(ord => `
+        <div class="p-4 flex items-center justify-between text-sm hover:bg-slate-900/50 transition">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center justify-center text-purple-400 text-base font-bold">
+              🎁
+            </div>
+            <div>
+              <h4 class="font-bold text-white text-sm">${ord.productName}</h4>
+              <p class="text-xs text-slate-400 mt-0.5">Sotib oluvchi: <strong class="text-amber-400">${ord.studentName} (${ord.studentId})</strong></p>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg">🪙 -${ord.price} Ball</span>
+            <p class="text-[10px] text-slate-500 mt-1">${ord.date}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderAdminPlan() {
+      const container = document.getElementById('admin-plan-list');
+      container.innerHTML = window.appData.curriculum.map(item => `
+        <div class="glass-card p-4 rounded-xl border border-slate-800 flex justify-between items-center">
+          <div>
+            <h4 class="font-bold text-white text-sm">${item.title}</h4>
+            <p class="text-xs text-slate-400">${item.desc}</p>
+          </div>
+          <button onclick="window.togglePublishLesson(${item.id})" class="${item.published ? 'bg-slate-700 text-slate-300' : 'bg-emerald-600 text-white'} font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer">
+            ${item.published ? 'Yashirish' : 'O\'quvchilarga Chiqarish'}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    window.togglePublishLesson = async function(id) {
+      const lesson = window.appData.curriculum.find(c => c.id === id);
+      if (lesson) {
+        lesson.published = !lesson.published;
+        await window.saveCloudData();
+        renderAdminPlan();
+      }
+    };
+
+    function renderAdminSubs() {
+      const container = document.getElementById('admin-subs-list');
+      const pending = (window.appData.submissions || []).filter(s => s.status === 'Kutilmoqda');
+
+      if (pending.length === 0) {
+        container.innerHTML = `<div class="text-center py-6 text-slate-500 text-sm">Hozircha kelgan yangi vazifalar yo'q.</div>`;
+        return;
+      }
+
+      container.innerHTML = pending.map((sub) => `
+        <div class="glass-card p-4 rounded-xl border border-slate-800 flex justify-between items-center">
+          <div>
+            <span class="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-bold">${sub.studentId}</span>
+            <h4 class="font-bold text-white text-sm mt-1">${sub.taskTitle}</h4>
+            <p class="text-xs text-slate-300 mt-1">${sub.ans}</p>
+          </div>
+          <button onclick="window.gradeSubmission('${sub.studentId}', ${sub.taskId})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer">
+            +10 Ball Berish
+          </button>
+        </div>
+      `).join('');
+    }
+
+    window.gradeSubmission = async function(studentId, taskId) {
+      const sub = window.appData.submissions.find(s => s.studentId === studentId && s.taskId === taskId);
+      const student = window.appData.students.find(s => s.id === studentId);
+      if (sub && student) {
+        sub.status = 'Qabul qilindi';
+        student.coins += 10;
+        await window.saveCloudData();
+        renderAdminSubs();
+        alert(`${student.name} ga 10 ball berildi!`);
+      }
+    };
+
+    function renderAdminAtt() {
+      const container = document.getElementById('admin-att-grid');
+      container.innerHTML = window.appData.students.map(s => `
+        <div class="glass-card p-4 rounded-2xl border border-slate-800/80 flex items-center justify-between">
+          <div>
+            <h4 class="font-bold text-white text-sm">${s.name}</h4>
+            <p class="text-xs text-amber-400 font-bold mt-0.5">🪙 ${s.coins} Ball</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="window.addCoins('${s.id}', 5)" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1.5 rounded-xl text-xs transition shadow-md shadow-amber-500/10 cursor-pointer">
+              +5 Keldi
+            </button>
+            <button onclick="window.addCoins('${s.id}', -5)" class="bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-400 font-bold px-2.5 py-1.5 rounded-xl text-xs transition cursor-pointer">
+              -5 Jarima
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.addCoins = async function(studentId, amount) {
+      const student = window.appData.students.find(s => s.id === studentId);
+      if (student) {
+        student.coins += amount;
+        if (student.coins < 0) student.coins = 0;
+        await window.saveCloudData();
+        renderAdminAtt();
+      }
+    };
+  </script>
+</body>
+</html>
